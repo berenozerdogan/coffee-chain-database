@@ -1,58 +1,80 @@
-1. Giriş
+# Coffee Chain Enterprise Database System
 
-Bu çalışmada, bir kahve zinciri işletmesine ait kurumsal verilerin yönetimini sağlamak amacıyla ilişkisel bir veritabanı sistemi tasarlanmış ve gerçekleştirilmiştir. Geliştirilen sistem; mağazalar, çalışanlar, müşteriler, ürünler, stok yönetimi ve satış işlemlerini bütünleşik bir yapı içerisinde ele almakta olup, gerçek hayattaki ticari süreçleri yansıtacak şekilde modellenmiştir.
+This project presents a **relational database system** designed for managing the enterprise-level operations of a coffee chain business.  
+The system is fully implemented using **pure SQL** and models real-world commercial processes such as store management, employees, customers, products, inventory control, and sales transactions.
 
-Tasarım sürecinde Genişletilmiş Varlık-İlişki (EER) modeli kullanılmış, ardından bu model SQL tabanlı ilişkisel veritabanına dönüştürülmüştür. Tüm veritabanı işlemleri yalnızca SQL dili kullanılarak gerçekleştirilmiştir.
+The database design is based on the **Extended Entity-Relationship (EER) model**, which is later transformed into a normalized relational schema.
 
-2. EER Diyagramı
+---
 
-Sistem tasarımının ilk aşamasında EER diyagramı oluşturulmuştur. Diyagramda yer alan temel varlıklar; Countries, Cities, Districts, Stores, Employees, Customers, Products, Categories, Seasons, Sales ve Payments olarak belirlenmiştir.
+## Project Scope
 
-Mağazalar ile ürünler arasındaki stok ilişkisi, Inventories adlı zayıf varlık aracılığıyla modellenmiş ve bu tabloda bileşik birincil anahtar kullanılmıştır. Satış işlemleri ise Sales ve SaleDetails varlıkları ile temsil edilmiş, her satışın bir veya daha fazla ürünü içerebilmesi sağlanmıştır.
+The system manages the following core business domains:
 
-3. İlişkisel Veritabanı Tasarımı
+- **Geographical Structure**
+  - Countries
+  - Cities
+  - Districts
 
-EER diyagramı temel alınarak veritabanı tabloları SQL dili kullanılarak oluşturulmuştur. Tüm tablolar birincil anahtar (PRIMARY KEY), yabancı anahtar (FOREIGN KEY) ve bütünlük kısıtları ile desteklenmiştir.
+- **Store Operations**
+  - Stores
+  - Employees
 
-Coğrafi yapı; Countries, Cities ve Districts tabloları aracılığıyla hiyerarşik olarak modellenmiştir. Her mağaza belirli bir ilçeye bağlıdır ve her mağazada birden fazla çalışan görev yapabilmektedir.
+- **Product Management**
+  - Products
+  - Categories
+  - Seasons
 
-Ürün yapısı Categories ve Seasons tabloları ile zenginleştirilmiş, ürünlerin kategori ve mevsimsel özellikleri ayrı varlıklar üzerinden tanımlanmıştır. Satış ve ödeme işlemleri ayrı tablolar halinde ele alınarak veri tekrarının önüne geçilmiştir.
+- **Inventory & Sales**
+  - Inventories (weak entity)
+  - Sales
+  - SaleDetails
+  - Payments
 
-4. Veri Bütünlüğü ve Kısıtlar
+All entities are connected through well-defined **primary keys**, **foreign keys**, and **integrity constraints**.
 
-Veri bütünlüğünü sağlamak amacıyla CHECK, UNIQUE ve FOREIGN KEY kısıtları kullanılmıştır. Örneğin; ürün fiyatlarının ve çalışan maaşlarının sıfırdan büyük olması, stok miktarlarının negatif olmaması gibi iş kuralları sistem seviyesinde kontrol altına alınmıştır.
+---
 
-Ayrıca satış sonrası stok miktarını otomatik olarak güncelleyen bir tetikleyici (trigger) tanımlanmıştır. Bu tetikleyici sayesinde her satış işlemi sonrasında ilgili mağazanın stok bilgileri tutarlı bir şekilde güncellenmektedir.
+## Database Design
 
-5. Veri Üretimi ve Test
+###  EER Modeling
+- The design process starts with an **Extended Entity-Relationship (EER) diagram**
+- Weak entities (e.g. `Inventories`) are modeled using **composite primary keys**
+- Sales transactions are decomposed into `Sales` and `SaleDetails` to support **multi-product sales**
 
-Sistemin test edilebilmesi amacıyla büyük ölçekli örnek veriler oluşturulmuştur. Veritabanına 20.000 müşteri, 50.000 satış kaydı ve yüzlerce ürün otomatik olarak eklenmiştir.
+###  Relational Schema
+- Fully normalized relational tables
+- Referential integrity enforced using:
+  - `PRIMARY KEY`
+  - `FOREIGN KEY`
+  - `UNIQUE`
+  - `CHECK` constraints
 
-Bu veri kümesi sayesinde sistemin performansı ve sorgu doğruluğu test edilmiş, karmaşık ilişkisel sorguların başarılı bir şekilde çalıştığı gözlemlenmiştir.
+---
 
+##  Data Integrity & Constraints
 
+To ensure data consistency and business rule enforcement:
 
-6. Örnek SQL Sorguları
+- Product prices and employee salaries must be greater than zero
+- Stock quantities cannot be negative
+- Gender values are restricted to predefined options
+- Email addresses are unique
+- A **trigger** automatically updates inventory levels after each sale
 
-Projede sistemin işlevselliğini göstermek amacıyla çeşitli örnek SQL sorguları geliştirilmiştir. Bunlara örnek olarak:
-
-Kış ayında çay tercih eden 20 yaş üstü erkek müşterilerin listelenmesi
-
-Şehirlere göre toplam satış tutarlarının hesaplanması
-
-En çok satılan ürünlerin belirlenmesi
-
-Mağaza bazında çalışan sayılarının listelenmesi
-
-Sezonlara göre satış adetlerinin analizi
-
-Ortalama sepet tutarının hesaplanması
-
-Stok seviyesi kritik düzeyin altına düşen ürünlerin tespiti
-
-verilebilir.
-
-
+```sql
+CREATE TRIGGER trg_StockAfterSale
+ON SaleDetails
+AFTER INSERT
+AS
+BEGIN
+    UPDATE i
+    SET i.StockQuantity = i.StockQuantity - ins.Quantity
+    FROM Inventories i
+    JOIN inserted ins ON i.ProductID = ins.ProductID
+    JOIN Sales s ON s.SaleID = ins.SaleID
+    WHERE i.StoreID = s.StoreID;
+END;
 
 
 
